@@ -1,0 +1,77 @@
+#include <iostream>
+#include <filesystem>
+#include <string>
+
+namespace fs = std::filesystem;
+
+void listFiles(const fs::path& currentPath) {
+    std::cout << "\nContents of: " << currentPath.string() << "\n";
+    for (const auto& entry : fs::directory_iterator(currentPath)) {
+        std::cout << (entry.is_directory() ? "[DIR] " : "      ")
+                  << entry.path().filename().string() << "\n";
+    }
+}
+
+void viewFile(const fs::path& filePath) {
+    if (fs::exists(filePath) && fs::is_regular_file(filePath)) {
+        std::ifstream file(filePath);
+        if (file.is_open()) {
+            std::cout << "\nContents of " << filePath.string() << ":\n";
+            std::string line;
+            while (std::getline(file, line)) {
+                std::cout << line << "\n";
+            }
+            file.close();
+        } else {
+            std::cerr << "Error: Unable to open the file.\n";
+        }
+    } else {
+        std::cerr << "Error: File does not exist or is not a regular file.\n";
+    }
+}
+
+void createDirectory(const fs::path& currentPath, const std::string& dirName) {
+    fs::path newDir = currentPath / dirName;
+    if (fs::create_directory(newDir)) {
+        std::cout << "Directory created: " << newDir.string() << "\n";
+    } else {
+        std::cerr << "Error: Failed to create directory.\n";
+    }
+}
+
+int main() {
+    fs::path currentPath = fs::current_path();
+    std::string command, argument;
+
+    while (true) {
+        std::cout << "\nCurrent Path: " << currentPath.string() << "\n";
+        std::cout << "Commands: list, view <file>, mkdir <dir>, cd <dir>, exit\n";
+        std::cout << "Enter command: ";
+        std::cin >> command;
+
+        if (command == "list") {
+            listFiles(currentPath);
+        } else if (command == "view") {
+            std::cin >> argument;
+            viewFile(currentPath / argument);
+        } else if (command == "mkdir") {
+            std::cin >> argument;
+            createDirectory(currentPath, argument);
+        } else if (command == "cd") {
+            std::cin >> argument;
+            fs::path newPath = currentPath / argument;
+            if (fs::exists(newPath) && fs::is_directory(newPath)) {
+                currentPath = newPath;
+            } else {
+                std::cerr << "Error: Directory does not exist.\n";
+            }
+        } else if (command == "exit") {
+            std::cout << "Exiting file manager. Goodbye!\n";
+            break;
+        } else {
+            std::cerr << "Invalid command. Try again.\n";
+        }
+    }
+
+    return 0;
+}
